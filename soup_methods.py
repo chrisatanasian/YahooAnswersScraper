@@ -1,5 +1,6 @@
 import urllib2
 from bs4 import BeautifulSoup
+import re
 
 # Use BeautifulSoup to parse the questions html to create a questions list.
 def get_questions(soup, html_class, get_descriptions):
@@ -7,13 +8,16 @@ def get_questions(soup, html_class, get_descriptions):
     questions = []
     for link in soup.find_all('a', class_=html_class):
         if link.get('href').find('question') != -1:
-            question = [link.text.encode('utf-8')]
+            text = re.sub(r'[^\x00-\x7F]+', ' ', link.text)
+            question = [text.encode('utf-8')]
             url = 'https://answers.yahoo.com' + link.get('href')
 
             if get_descriptions:
                 try:
                     html = urllib2.urlopen(url)
-                    question.append(get_description(BeautifulSoup(html, 'html.parser')))
+                    description = get_description(convert_html_to_soup(html))
+                    description = re.sub(r'[^\x00-\x7F]+', ' ', description)
+                    question.append(description.encode('utf-8'))
                 except urllib2.HTTPError, e:
                     continue
             else:
